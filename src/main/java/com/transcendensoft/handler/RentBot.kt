@@ -5,6 +5,7 @@ import com.transcendensoft.model.BotCommons.Companion.COMMAND_CREATE_POST
 import com.transcendensoft.model.BotCommons.Companion.COMMAND_HELP
 import com.transcendensoft.model.BotCommons.Companion.COMMAND_START
 import com.transcendensoft.model.BotCommons.Companion.HELP_TEXT
+import com.transcendensoft.model.BotCommons.Companion.ID_OF_GROUP_WITH_POSTS
 import com.transcendensoft.model.BotCommons.Companion.TOKEN
 import com.transcendensoft.model.BotCommons.Companion.USER_MAP
 import com.transcendensoft.model.BotCommons.Companion.USER_TELEGRAM_ID
@@ -27,6 +28,7 @@ import com.transcendensoft.model.TextConstants.Companion.GOOD
 import com.transcendensoft.model.TextConstants.Companion.LAST_STEP
 import com.transcendensoft.model.TextConstants.Companion.LOAD_PHOTO
 import com.transcendensoft.model.TextConstants.Companion.START
+import com.transcendensoft.util.withEmoji
 import com.vdurmont.emoji.EmojiParser
 import org.telegram.abilitybots.api.bot.AbilityBot
 import org.telegram.abilitybots.api.objects.*
@@ -42,6 +44,7 @@ import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardRow
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
 
 import org.telegram.telegrambots.exceptions.TelegramApiException
+import java.util.*
 
 class RentBot : AbilityBot(TOKEN, BOT_NAME) {
     private val userMap = db.getMap<EndUser, Order>(USER_MAP)
@@ -53,7 +56,10 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
             .locality(Locality.ALL)
             .privacy(Privacy.PUBLIC)
             .input(0)
-            .action { ctx -> silent.send(EmojiParser.parseToUnicode(START), ctx.chatId()) }
+            .action { ctx ->
+                silent.send(START.withEmoji(), ctx.chatId())
+                //println(ResourceBundle.getBundle("i18n/strings", Locale.forLanguageTag("ua_UK")).getString("welcome"))
+            }
             .build()
 
     fun helpAbility() = Ability.builder()
@@ -202,7 +208,7 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         try {
             currentUserOrder.square = it.update()?.message?.text?.toInt() ?: 0
         } catch (e: NumberFormatException) {
-            silent.sendMd(EmojiParser.parseToUnicode(ERROR_ENTER_SQUARE), it.chatId())
+            silent.sendMd(ERROR_ENTER_SQUARE.withEmoji(), it.chatId())
             return
         }
 
@@ -265,6 +271,10 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         // Update in db
         userMap[it.user()] = currentUserOrder
         silent.send(LOAD_PHOTO, it.chatId())
+
+        val sendMessage = SendMessage(ID_OF_GROUP_WITH_POSTS, currentUserOrder.createPost().withEmoji())
+        sendMessage.enableHtml(true)
+        sendMessageToTelegram(sendMessage)
     }
 
     private fun sendMessageToTelegram(sendMessage: SendMessage) {

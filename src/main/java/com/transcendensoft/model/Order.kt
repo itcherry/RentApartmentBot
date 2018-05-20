@@ -1,5 +1,9 @@
 package com.transcendensoft.model
 
+import com.transcendensoft.model.TextConstants.Companion.HASHTAG_RENT
+import com.transcendensoft.model.TextConstants.Companion.PRICE
+import com.transcendensoft.model.TextConstants.Companion.RENT
+import com.transcendensoft.model.TextConstants.Companion.SQUARE
 import java.io.Serializable
 
 data class Order(
@@ -13,11 +17,38 @@ data class Order(
         var apartment: Apartment? = null,
         var master: Master? = null,
         var comment: String? = null,
-        var address:String? = null,
-        var questionState: QuestionState? = null) : Serializable {
+        var address: String? = null,
+        var questionState: QuestionState? = null,
+        var isFree: Boolean = true) : Serializable {
 
     fun createPost(): String {
-        return ""
+        val apartmentString = if (apartment == Apartment.FLAT) {
+            flatRooms?.wantText ?: ""
+        } else {
+            apartment?.wantText?.toLowerCase() ?: ""
+        }
+
+        val addressString = if(!address.isNullOrBlank()) "по адресу: <i>${address}</i>" else ""
+        val masterString = if(master != null) ", я ${master!!.text}" else ""
+        val phoneString = if(!phone.isNullOrBlank()) ":telephone: Телефон: $phone" else ""
+        val freeString = if(isFree) ":white_check_mark: Апартаменты еще свободны" else ":red_circle: Апартаменты сданы"
+
+        return """$HASHTAG_RENT
+            |:house_with_garden: $RENT $apartmentString $addressString
+            |
+            |$PRICE $price
+            |$SQUARE $square кв.м.
+            |
+            |Предлагаю такие удобства: $facilities
+            |
+            |$comment
+            |
+            |:bust_in_silhouette: Меня зовут $name$masterString
+            |:call_me: Телеграм: @$telegram
+            |$phoneString
+            |
+            |$freeString
+        """.trimMargin()
     }
 
     enum class Apartment(val infinitiveText: String, val wantText: String, val callbackData: String) {
@@ -27,16 +58,16 @@ data class Order(
         OFFICE("Офис", "Офис", "callbackOffice")
     }
 
-    enum class FlatRooms(val infinitiveText: String, val wantText: String, val callbackData: String) {
-        ONE_ROOM("1-к квартира", "1-к квартиру", "callbackOneRoom"),
-        TWO_ROOM("2-к квартира", "2-к квартиру", "callbackTwoRoom"),
-        THREE_ROOM("3-к квартира", "3-к квартиру", "callbackThreeRoom"),
-        FOUR_ROOM("4-к квартира", "4-к квартиру", "callbackFourRoom"),
-        FIVE_ROOM("5-к квартира", "5-к квартиру", "callbackFiveRoom"),
-        SMART("Смарт квартира", "Смарт квартиру", "callbackSmart"),
-        STUDIO("Квартира студио", "Квартиру студио", "callbackStudio"),
-        TWO_FLOORS("2-х этажная квартира", "2-х этажную квартиру", "callbackTwoFloors"),
-        PENTHOUSE("Пентхаус", "Пентхаус", "callbackPenthouse")
+    enum class FlatRooms(val infinitiveText: String, val wantText: String) {
+        ONE_ROOM("1-к квартира", "1-к квартиру"),
+        TWO_ROOM("2-к квартира", "2-к квартиру"),
+        THREE_ROOM("3-к квартира", "3-к квартиру"),
+        FOUR_ROOM("4-к квартира", "4-к квартиру"),
+        FIVE_ROOM("5-к квартира", "5-к квартиру"),
+        SMART("Смарт квартира", "Смарт квартиру"),
+        STUDIO("Квартира студио", "Квартиру студио"),
+        TWO_FLOORS("2-х этажная квартира", "2-х этажную квартиру"),
+        PENTHOUSE("Пентхаус", "Пентхаус")
     }
 
     enum class Master(val text: String, val callbackData: String) {

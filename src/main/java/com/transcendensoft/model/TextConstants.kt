@@ -9,13 +9,13 @@ interface TextConstants {
         const val HASHTAG_RENT_OUT = "#сниму_kvartirHUB"
 
         // Post creation
-        const val PRICE = "Цена: "
-        const val SQUARE = "Площадь: "
-        const val PHONE = "Телефон: "
-        const val TELEGRAM = "Телеграм: "
-        const val RENT = "Сдам "
-        const val FACILITIES = "Удобства: "
-        const val NAME = "Имя арендодателя: "
+        const val PRICE = ":moneybag: Цена:"
+        const val SQUARE = "Площадь:"
+        const val PHONE = "Телефон:"
+        const val TELEGRAM = "Телеграм:"
+        const val RENT = "Сдам"
+        const val FACILITIES = "Удобства:"
+        const val NAME = "Имя арендодателя:"
         const val I_AM = "Я"
 
         // Navigation and entering data
@@ -47,7 +47,7 @@ interface TextConstants {
         const val ALMOST_DONE = "Вы почти сделали пост!"
         const val LAST_STEP = "Фуух. Остался последний шаг!"
         const val LOAD_PHOTO = "Текстовый пост создан. Теперь можете загрузить фото ваших апартаментов.\n" +
-                "Обязательно загружайте их как фото, а не как файл"
+                "Обязательно загружайте их как фото, а не как файл. После загрузки фотографий "
         const val FINISH = "Отлично! Вы успешно создали пост о сдаче апартаментов.\n" +
                 "Мы опубликуем пост в скором времени после модерации."
     }

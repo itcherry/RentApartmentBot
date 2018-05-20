@@ -15,5 +15,6 @@ interface BotCommons {
 
         //DB
         const val USER_MAP = "userMap"
+        const val ID_OF_GROUP_WITH_POSTS = -252092566L
     }
 }
