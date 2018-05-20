@@ -4,7 +4,7 @@ import java.io.Serializable
 
 data class Order(
         var name: String = "",
-        var price: Float = .0f,
+        var price: String = "",
         var square: Int = 0,
         var phone: String? = null,
         var telegram: String = "",
@@ -13,6 +13,7 @@ data class Order(
         var apartment: Apartment? = null,
         var master: Master? = null,
         var comment: String? = null,
+        var address:String? = null,
         var questionState: QuestionState? = null) : Serializable {
 
     fun createPost(): String {
@@ -20,7 +21,7 @@ data class Order(
     }
 
     enum class Apartment(val infinitiveText: String, val wantText: String, val callbackData: String) {
-        FLAT("Квартирa*/", "Квартиру", "callbackFlat"),
+        FLAT("Квартирa", "Квартиру", "callbackFlat"),
         ROOM("Комната", "Комнату", "callbackRoom"),
         HOUSE("Дом", "Дом", "callbackHouse"),
         OFFICE("Офис", "Офис", "callbackOffice")
@@ -38,10 +39,10 @@ data class Order(
         PENTHOUSE("Пентхаус", "Пентхаус", "callbackPenthouse")
     }
 
-    enum class Master(val text: String) {
-        MASTER("Хозяин(-ка)"),
-        RIELTOR("Риелтор"),
-        AGENCY("Агенство")
+    enum class Master(val text: String, val callbackData: String) {
+        MASTER("Хозяин(-ка)", "callbackMaster"),
+        RIELTOR("Риелтор", "callbackRieltor"),
+        AGENCY("Агенство", "callbackAgency")
     }
 
     enum class QuestionState {
