@@ -1,9 +1,16 @@
 package com.transcendensoft.model
 
+import com.transcendensoft.model.TextConstants.Companion.APARTMENTS_FREE
+import com.transcendensoft.model.TextConstants.Companion.APARTMENTS_RENTED
+import com.transcendensoft.model.TextConstants.Companion.FACILITIES
 import com.transcendensoft.model.TextConstants.Companion.HASHTAG_RENT
+import com.transcendensoft.model.TextConstants.Companion.I_AM
+import com.transcendensoft.model.TextConstants.Companion.PHONE
+import com.transcendensoft.model.TextConstants.Companion.PHOTO_OF_APARTMENTS
 import com.transcendensoft.model.TextConstants.Companion.PRICE
 import com.transcendensoft.model.TextConstants.Companion.RENT
 import com.transcendensoft.model.TextConstants.Companion.SQUARE
+import com.transcendensoft.model.TextConstants.Companion.TELEGRAM
 import java.io.Serializable
 
 data class Order(
@@ -19,7 +26,9 @@ data class Order(
         var comment: String? = null,
         var address: String? = null,
         var questionState: QuestionState? = null,
-        var isFree: Boolean = true) : Serializable {
+        var isFree: Boolean = true,
+        var isWithPhoto: Boolean = false,
+        var photoIds: List<String?>? = null) : Serializable {
 
     fun createPost(): String {
         val apartmentString = if (apartment == Apartment.FLAT) {
@@ -28,26 +37,28 @@ data class Order(
             apartment?.wantText?.toLowerCase() ?: ""
         }
 
-        val addressString = if(!address.isNullOrBlank()) "по адресу: <i>${address}</i>" else ""
-        val masterString = if(master != null) ", я ${master!!.text}" else ""
-        val phoneString = if(!phone.isNullOrBlank()) ":telephone: Телефон: $phone" else ""
-        val freeString = if(isFree) ":white_check_mark: Апартаменты еще свободны" else ":red_circle: Апартаменты сданы"
+        val addressString = if (!address.isNullOrBlank()) "по адресу: <b>${address}</b>" else ""
+        val masterString = if (master != null) ", я ${master!!.text}" else ""
+        val phoneString = if (!phone.isNullOrBlank()) "<b>$PHONE</b> $phone" else ""
+        val freeString = if (isFree) APARTMENTS_FREE else APARTMENTS_RENTED
+        val photoString = if(isWithPhoto) PHOTO_OF_APARTMENTS else ""
 
         return """$HASHTAG_RENT
-            |:house_with_garden: $RENT $apartmentString $addressString
+            |$RENT $apartmentString $addressString
             |
-            |$PRICE $price
-            |$SQUARE $square кв.м.
+            |<b>$PRICE</b> $price
+            |<b>$SQUARE</b> $square кв.м.
             |
-            |Предлагаю такие удобства: $facilities
+            |<b>$FACILITIES</b> $facilities
             |
             |$comment
             |
-            |:bust_in_silhouette: Меня зовут $name$masterString
-            |:call_me: Телеграм: @$telegram
+            |<b>$I_AM</b> $name$masterString
+            |<b>$TELEGRAM</b> @$telegram
             |$phoneString
             |
             |$freeString
+            |$photoString
         """.trimMargin()
     }
 
@@ -76,6 +87,11 @@ data class Order(
         AGENCY("Агенство", "callbackAgency")
     }
 
+    enum class Action(val text: String, val callbackData: String){
+        YES("Да", "callbackYes"),
+        NO("Нет", "callbackNo")
+    }
+
     enum class QuestionState {
         ENTER_NAME,
         ENTER_APARTMENT,
@@ -87,6 +103,8 @@ data class Order(
         ENTER_COMMENT,
         ENTER_MASTER,
         ENTER_PHONE,
+        ENTER_LOAD_PHOTO_QUESTION,
         ENTER_LOAD_PHOTO,
+        FINISHED
     }
 }
