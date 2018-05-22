@@ -1,5 +1,7 @@
 package com.transcendensoft.model
 
+import com.transcendensoft.model.BotCommons.Companion.COMMAND_CREATE_POST
+import com.transcendensoft.model.BotCommons.Companion.COMMAND_HELP
 import com.vdurmont.emoji.EmojiParser
 
 interface TextConstants {
@@ -16,13 +18,16 @@ interface TextConstants {
         const val RENT = ":house_with_garden: Сдам"
         const val FACILITIES = "Удобства апартаментов:"
         const val I_AM = ":bust_in_silhouette: Меня зовут"
-        const val PHOTO_OF_APARTMENTS = "Фото апартаментов там :point_down:"
+        const val PHOTO_OF_APARTMENTS = "<b>>>>>>>>>></b> Фото апартаментов там :point_down:"
         const val APARTMENTS_FREE = ":white_check_mark: Апартаменты еще свободны"
         const val APARTMENTS_RENTED = ":red_circle: Апартаменты сданы"
+        const val WHO_AM_I = ":male_office_worker: Кто я:"
+
 
         // Navigation and entering data
         const val START = "У тебя получилось!:blush: Теперь давай красиво оформим твое предложение о сдачи апартаментов.\n" +
-                "Используй команду: /${BotCommons.COMMAND_CREATE_POST}"
+                "Используй команду: /${BotCommons.COMMAND_CREATE_POST}\n" +
+                "Список всех команд: /${BotCommons.COMMAND_HELP}"
         const val CREATE_POST_TEXT = "Просто следуй инструкциям и бот сгенерирует прекрасное предложение о сдачи апартаментов :thumbsup:\n\n" +
                 "Хорошие съемщики сразу видят когда четко определены условия жилья :wink:"
         const val ENTER_NAME = "Как вас зовут?"
@@ -45,9 +50,17 @@ interface TextConstants {
         const val LOAD_PHOTO_QUESTION = "Текстовая публикация создана. Вы хотите загрузить фото ваших апартаментов?" +
                 "\n\nШанс на то, что у вас снимут квартиру выше, если вы добавите фото :camera:"
         const val LOAD_PHOTO = ":clap: Замечательно! Теперь загрузите фото ваших апартаментов. Загрузите их как фото, а не как файл, пожалуйста."
-        const val FINISH = "Отлично! Вы успешно создали публикацию о сдаче апартаментов.:thumbsup::thumbsup::thumbsup:\n" +
-                "Мы опубликуем ваш пост в скором времени после модерации."
+        const val FINISH = "Отлично! Вы успешно создали публикацию о сдаче апартаментов.:thumbsup: :thumbsup: :thumbsup:\n" +
+                "<b>Мы опубликуем ваше предложение в скором времени после модерации.</b>" +
+                "\n\nДля создания еще одной публикации используйте команду /$COMMAND_CREATE_POST\n" +
+                "Помощь в использовании бота: /$COMMAND_HELP\n\n"
         const val ERROR_SEND_PHOTO = "Загрузите фото пожалуйста. Не нужно вводить что-то другое на данном этапе."
+        const val POST_PREVIEW = "Ваша публикация выглядит так :point_down:"
+        const val SURE_TO_PUBLISH = "Пересмотрите вашу публикацию и проверьте ее на корректность данных.\n\n" +
+                "Если все хорошо - жмите на <b>Опубликовать</b>.\n" +
+                "Если вам нужно что-то изменить - жмите на <b>Отмена</b>," +
+                " после чего создайте новую публикацию с помощью команды /$COMMAND_CREATE_POST"
+        const val PUBLISH_CANCELLED = "Публикация отменена"
 
         // Helper
         const val GOOD = "Отлично"

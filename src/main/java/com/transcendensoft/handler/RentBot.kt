@@ -3,8 +3,10 @@ package com.transcendensoft.handler
 import com.transcendensoft.model.BotCommons.Companion.BOT_NAME
 import com.transcendensoft.model.BotCommons.Companion.COMMAND_CREATE_POST
 import com.transcendensoft.model.BotCommons.Companion.COMMAND_HELP
+import com.transcendensoft.model.BotCommons.Companion.COMMAND_SEND_MESSAGE
 import com.transcendensoft.model.BotCommons.Companion.COMMAND_START
 import com.transcendensoft.model.BotCommons.Companion.HELP_TEXT
+import com.transcendensoft.model.BotCommons.Companion.ID_OF_GROUP_WITH_POSTS
 import com.transcendensoft.model.BotCommons.Companion.TOKEN
 import com.transcendensoft.model.BotCommons.Companion.USER_MAP
 import com.transcendensoft.model.BotCommons.Companion.USER_TELEGRAM_ID
@@ -31,13 +33,25 @@ import com.transcendensoft.model.TextConstants.Companion.GOOD
 import com.transcendensoft.model.TextConstants.Companion.LAST_STEP
 import com.transcendensoft.model.TextConstants.Companion.LOAD_PHOTO
 import com.transcendensoft.model.TextConstants.Companion.LOAD_PHOTO_QUESTION
+import com.transcendensoft.model.TextConstants.Companion.POST_PREVIEW
+import com.transcendensoft.model.TextConstants.Companion.PUBLISH_CANCELLED
 import com.transcendensoft.model.TextConstants.Companion.START
+import com.transcendensoft.model.TextConstants.Companion.SURE_TO_PUBLISH
 import com.transcendensoft.util.withEmoji
 import org.telegram.abilitybots.api.bot.AbilityBot
 import org.telegram.abilitybots.api.objects.*
 import org.telegram.telegrambots.api.methods.AnswerCallbackQuery
+import org.telegram.telegrambots.api.methods.BotApiMethod
+import org.telegram.telegrambots.api.methods.ForwardMessage
+import org.telegram.telegrambots.api.methods.groupadministration.DeleteChatPhoto
 import org.telegram.telegrambots.api.methods.send.SendMediaGroup
 import org.telegram.telegrambots.api.methods.send.SendMessage
+import org.telegram.telegrambots.api.methods.send.SendPhoto
+import org.telegram.telegrambots.api.methods.updatingmessages.DeleteMessage
+import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageCaption
+import org.telegram.telegrambots.api.objects.Message
+import org.telegram.telegrambots.api.objects.PhotoSize
+import org.telegram.telegrambots.api.objects.Update
 import org.telegram.telegrambots.api.objects.media.InputMediaPhoto
 import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup
 import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboardMarkup
@@ -46,7 +60,12 @@ import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardButto
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardRow
 
 import org.telegram.telegrambots.exceptions.TelegramApiException
+import org.telegram.telegrambots.exceptions.TelegramApiRequestException
 import org.telegram.telegrambots.logging.BotLogger
+import org.telegram.telegrambots.updateshandlers.SentCallback
+import java.lang.Exception
+import java.util.*
+import kotlin.concurrent.schedule
 
 class RentBot : AbilityBot(TOKEN, BOT_NAME) {
     private val userMap = db.getMap<EndUser, MutableList<Order>>(USER_MAP)
@@ -78,6 +97,24 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
             }
             .build()
 
+    fun sendMessageToUserAbility() = Ability.builder() // /sendmessage itcherry 'someMessage'
+            .name(COMMAND_SEND_MESSAGE)
+            .locality(Locality.USER)
+            .privacy(Privacy.CREATOR)
+            .action { ctx ->
+                val endUser = userMap.keys.first {
+                    it.username() == ctx.firstArg()
+                }
+                val userOrder = userMap[endUser]?.last()
+                if (userOrder != null) {
+                    val textList = ctx.arguments().slice(1 until ctx.arguments().size)
+                    val text = textList.joinToString(separator = " ")
+                    silent.send("Модератор: $text", userOrder.chatId)
+                } else {
+                    silent.send("Такого пользователя не существует в БД.", ctx.chatId())
+                }
+            }.build()
+
     fun createPostAbility() = Ability.builder()
             .name(COMMAND_CREATE_POST)
             .locality(Locality.ALL)
@@ -88,8 +125,8 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                 val order = Order(
                         telegram = endUser.username(),
                         name = "${endUser.lastName()} ${endUser.firstName()}",
-                        questionState = Order.QuestionState.ENTER_NAME)
-                db.clear()
+                        questionState = Order.QuestionState.ENTER_NAME,
+                        chatId = it.chatId())
 
                 var orderList = userMap[endUser]
                 if (orderList == null) {
@@ -124,7 +161,7 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                         Order.QuestionState.ENTER_LOAD_PHOTO -> processLoadPhoto(it)
                         Order.QuestionState.ENTER_LOAD_PHOTO_QUESTION -> processLoadPhotoQuestion(it)
                         Order.QuestionState.FINISHED -> processFinished(it)
-                        null -> TODO()
+                        null -> silent.send(START.withEmoji(), it.chatId())
                     }
                 }
                 .build()
@@ -162,7 +199,6 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         val apartment = Order.Apartment.values()
                 .first { apartment -> it.update()?.callbackQuery?.data == apartment.callbackData }
         currentUserOrder?.apartment = apartment
-        println("Current order: $currentUserOrder")
 
         when (it.update()?.callbackQuery?.data) {
             Order.Apartment.FLAT.callbackData -> {
@@ -317,7 +353,7 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         userMap[it.user()] = orderList
 
         // Ask question about photo
-        val sendMessage = SendMessage(it.chatId(), LOAD_PHOTO_QUESTION)
+        val sendMessage = SendMessage(it.chatId(), LOAD_PHOTO_QUESTION.withEmoji())
         val inlineKeyboardMarkup = getInlineKeyboard {
             val inlineKeyboardList = mutableListOf<InlineKeyboardButton>()
             Order.Action.values().forEach {
@@ -345,9 +381,11 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
             }
             Order.Action.NO -> {
                 currentUserOrder?.questionState = FINISHED
-                //silent.send(FINISH.withEmoji(), it.chatId())
+                processFinished(it)
             }
         }
+        sendAnswerToInlineButton(it)
+
 
         // Update in db
         userMap[it.user()] = orderList
@@ -359,11 +397,19 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
 
         val update = it.update()
         if (update.hasMessage() && update.message.hasPhoto()) {
-            val photoList = update.message.photo
-            val photoIdList = photoList.map { photoSize -> photoSize.fileId }
+            processPhoto(update, currentUserOrder)
 
-            currentUserOrder?.photoIds = photoIdList
-            currentUserOrder?.questionState = FINISHED
+            val photoCount = currentUserOrder?.photoIds?.size
+            Timer("schedule", true).schedule(1500) {
+                val innerOrderList = userMap[it.user()]
+                val innerCurrentUserOrder = innerOrderList?.last()
+                if (photoCount == innerCurrentUserOrder?.photoIds?.size) {
+                    onPhotoLoadingFinished(it.chatId(), innerCurrentUserOrder)
+
+                    // Update in db
+                    userMap[it.user()] = innerOrderList
+                }
+            }
         } else {
             silent.send(ERROR_SEND_PHOTO, it.chatId())
         }
@@ -372,24 +418,94 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         userMap[it.user()] = orderList
     }
 
+    private fun processPhoto(update: Update, currentUserOrder: Order?) {
+        val photoList = update.message.photo
+        val largestPhotoFileId = photoList.maxBy(PhotoSize::getFileSize)?.fileId
+
+        currentUserOrder?.photoIds?.add(largestPhotoFileId)
+    }
+
+    private fun onPhotoLoadingFinished(chatId: Long, currentUserOrder: Order?) {
+        currentUserOrder?.questionState = FINISHED
+
+        val sendMessageFinish = SendMessage(chatId, POST_PREVIEW.withEmoji())
+        sendMessageFinish.enableHtml(true)
+        sendMessageToTelegram(sendMessageFinish)
+
+        val sendMessageWithOrder = SendMessage(chatId, currentUserOrder?.createPost()?.withEmoji())
+        sendMessageWithOrder.enableHtml(true)
+        sendMessageToTelegram(sendMessageWithOrder)
+
+        sendPhotosAlbum(chatId, currentUserOrder)
+
+        askAboutCorrectnessOfPost(chatId)
+    }
+
+    private fun askAboutCorrectnessOfPost(chatId: Long) {
+        // Ask question about correctness of publication
+        val sendMessage = SendMessage(chatId, SURE_TO_PUBLISH.withEmoji())
+        sendMessage.enableHtml(true)
+        val inlineKeyboardMarkup = getInlineKeyboard {
+            val inlineKeyboardList = mutableListOf<InlineKeyboardButton>()
+            Order.PublishState.values().forEach {
+                inlineKeyboardList += InlineKeyboardButton(it.text)
+                        .setCallbackData(it.callbackData)
+            }
+            inlineKeyboardList
+        }
+        sendMessage.replyMarkup = inlineKeyboardMarkup
+        sendMessageToTelegram(sendMessage)
+    }
+
     private fun processFinished(msgContext: MessageContext) {
         val orderList = userMap[msgContext.user()]
         val currentUserOrder = orderList?.last()
 
-        silent.send(FINISH.withEmoji(), msgContext.chatId())
+        if (msgContext.update().hasCallbackQuery()) {
+            sendAnswerToInlineButton(msgContext)
+            val publishState = Order.PublishState.values()
+                    .firstOrNull { publish -> msgContext.update()?.callbackQuery?.data == publish.callbackData }
+            when (publishState) {
+                Order.PublishState.PUBLISH -> {
+                    val sendMessageWithOrder = SendMessage(ID_OF_GROUP_WITH_POSTS,
+                            currentUserOrder?.createPost()?.withEmoji())
+                    sendMessageWithOrder.enableHtml(true)
+                    sendMessageToTelegram(sendMessageWithOrder)
 
-        sendFinalPostToChat(msgContext, currentUserOrder)
+                    sendPhotosAlbum(ID_OF_GROUP_WITH_POSTS, currentUserOrder)
+
+                    val sendMessagePublished = SendMessage(msgContext.chatId(), FINISH.withEmoji())
+                    sendMessagePublished.enableHtml(true)
+                    sendMessageToTelegram(sendMessagePublished)
+                }
+                Order.PublishState.CANCEL -> {
+                    silent.send(PUBLISH_CANCELLED, msgContext.chatId())
+                    helpAbility().action().accept(msgContext)
+                    orderList?.remove(currentUserOrder)
+                }
+                null -> {
+                    val sendMessagePreview = SendMessage(msgContext.chatId(), POST_PREVIEW.withEmoji())
+                    sendMessagePreview.enableHtml(true)
+                    sendMessageToTelegram(sendMessagePreview)
+
+                    val sendMessageWithOrder = SendMessage(msgContext.chatId(),
+                            currentUserOrder?.createPost()?.withEmoji())
+                    sendMessageWithOrder.enableHtml(true)
+                    sendMessageToTelegram(sendMessageWithOrder)
+
+                    askAboutCorrectnessOfPost(msgContext.chatId())
+                }
+            }
+        }
+
+        userMap[msgContext.user()] = orderList
     }
 
-    private fun sendFinalPostToChat(msgContext: MessageContext, currentUserOrder: Order?) {
-        val sendMessageWithOrder = SendMessage(msgContext.chatId(), currentUserOrder?.createPost()?.withEmoji())
-        sendMessageWithOrder.enableHtml(true)
-        sendMessageToTelegram(sendMessageWithOrder)
-
+    private fun sendPhotosAlbum(chatId: Long, currentUserOrder: Order?) {
         currentUserOrder?.isWithPhoto?.let {
             currentUserOrder.photoIds?.let {
                 val inputMediaPhotos = it.map { fileId -> InputMediaPhoto(fileId, null) }
-                val mediaGroup = SendMediaGroup(msgContext.chatId(), inputMediaPhotos)
+                val mediaGroup = SendMediaGroup(chatId, inputMediaPhotos)
                 try {
                     sendMediaGroup(mediaGroup)
                 } catch (e: TelegramApiException) {

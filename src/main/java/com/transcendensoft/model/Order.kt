@@ -11,6 +11,7 @@ import com.transcendensoft.model.TextConstants.Companion.PRICE
 import com.transcendensoft.model.TextConstants.Companion.RENT
 import com.transcendensoft.model.TextConstants.Companion.SQUARE
 import com.transcendensoft.model.TextConstants.Companion.TELEGRAM
+import com.transcendensoft.model.TextConstants.Companion.WHO_AM_I
 import java.io.Serializable
 
 data class Order(
@@ -28,7 +29,8 @@ data class Order(
         var questionState: QuestionState? = null,
         var isFree: Boolean = true,
         var isWithPhoto: Boolean = false,
-        var photoIds: List<String?>? = null) : Serializable {
+        var photoIds: MutableList<String?>? = mutableListOf(),
+        var chatId: Long = 0L) : Serializable {
 
     fun createPost(): String {
         val apartmentString = if (apartment == Apartment.FLAT) {
@@ -38,7 +40,7 @@ data class Order(
         }
 
         val addressString = if (!address.isNullOrBlank()) "по адресу: <b>${address}</b>" else ""
-        val masterString = if (master != null) ", я ${master!!.text}" else ""
+        val masterString = if (master != null) master!!.text.toLowerCase() else ""
         val phoneString = if (!phone.isNullOrBlank()) "<b>$PHONE</b> $phone" else ""
         val freeString = if (isFree) APARTMENTS_FREE else APARTMENTS_RENTED
         val photoString = if(isWithPhoto) PHOTO_OF_APARTMENTS else ""
@@ -53,11 +55,13 @@ data class Order(
             |
             |$comment
             |
-            |<b>$I_AM</b> $name$masterString
+            |<b>$I_AM</b> $name
+            |<b>$WHO_AM_I</b> $masterString
             |<b>$TELEGRAM</b> @$telegram
             |$phoneString
             |
             |$freeString
+            |
             |$photoString
         """.trimMargin()
     }
@@ -106,5 +110,10 @@ data class Order(
         ENTER_LOAD_PHOTO_QUESTION,
         ENTER_LOAD_PHOTO,
         FINISHED
+    }
+
+    enum class PublishState(val text: String, val callbackData: String) {
+        PUBLISH("Опубликовать", "callbackPublish"),
+        CANCEL("Отмена","callbackCancel")
     }
 }

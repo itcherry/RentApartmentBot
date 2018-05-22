@@ -12,6 +12,7 @@ interface BotCommons {
         const val COMMAND_CANCEL = "cancel";
         const val COMMAND_RENTED = "rented";
         const val COMMAND_FREE = "free";
+        const val COMMAND_SEND_MESSAGE = "sendmessage"
 
         const val HELP_TEXT = """Бот канала <b>КвартирХаб</b> для тех, кто хочет разместить объявление о сдачи апартаментов
             |
