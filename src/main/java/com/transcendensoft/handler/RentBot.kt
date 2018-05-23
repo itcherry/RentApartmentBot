@@ -1,5 +1,6 @@
 package com.transcendensoft.handler
 
+import com.transcendensoft.model.BotCommons
 import com.transcendensoft.model.BotCommons.Companion.BOT_NAME
 import com.transcendensoft.model.BotCommons.Companion.COMMAND_CANCEL
 import com.transcendensoft.model.BotCommons.Companion.COMMAND_CREATE_POST
@@ -8,12 +9,18 @@ import com.transcendensoft.model.BotCommons.Companion.COMMAND_SEND_MESSAGE
 import com.transcendensoft.model.BotCommons.Companion.COMMAND_START
 import com.transcendensoft.model.BotCommons.Companion.HELP_TEXT
 import com.transcendensoft.model.BotCommons.Companion.ID_OF_GROUP_WITH_POSTS
+import com.transcendensoft.model.BotCommons.Companion.KVARTIR_HUB_CHAT_ID
+import com.transcendensoft.model.BotCommons.Companion.PARAMETER_ORDER_ID
+import com.transcendensoft.model.BotCommons.Companion.PARAMETER_USER_ID
+import com.transcendensoft.model.BotCommons.Companion.SHARE_ACTION
+import com.transcendensoft.model.BotCommons.Companion.SHARE_TO_CHANNEL_CALLBACK
 import com.transcendensoft.model.BotCommons.Companion.TOKEN
 import com.transcendensoft.model.BotCommons.Companion.USER_MAP
 import com.transcendensoft.model.BotCommons.Companion.USER_TELEGRAM_ID
 import com.transcendensoft.model.Order
 import com.transcendensoft.model.Order.QuestionState.*
 import com.transcendensoft.model.TextConstants.Companion.ALMOST_DONE
+import com.transcendensoft.model.TextConstants.Companion.APARTMENT_STATE_CHANGED
 import com.transcendensoft.model.TextConstants.Companion.AWESOME
 import com.transcendensoft.model.TextConstants.Companion.CANCELLED
 import com.transcendensoft.model.TextConstants.Companion.COOL
@@ -30,6 +37,7 @@ import com.transcendensoft.model.TextConstants.Companion.ENTER_ROOMS_COUNT
 import com.transcendensoft.model.TextConstants.Companion.ENTER_SQUARE
 import com.transcendensoft.model.TextConstants.Companion.ERROR_CANCEL
 import com.transcendensoft.model.TextConstants.Companion.ERROR_ENTER_SQUARE
+import com.transcendensoft.model.TextConstants.Companion.ERROR_RENTED_COMMAND
 import com.transcendensoft.model.TextConstants.Companion.ERROR_SEND_PHOTO
 import com.transcendensoft.model.TextConstants.Companion.FINISH
 import com.transcendensoft.model.TextConstants.Companion.GOOD
@@ -44,14 +52,9 @@ import com.transcendensoft.util.withEmoji
 import org.telegram.abilitybots.api.bot.AbilityBot
 import org.telegram.abilitybots.api.objects.*
 import org.telegram.telegrambots.api.methods.AnswerCallbackQuery
-import org.telegram.telegrambots.api.methods.BotApiMethod
-import org.telegram.telegrambots.api.methods.ForwardMessage
-import org.telegram.telegrambots.api.methods.groupadministration.DeleteChatPhoto
 import org.telegram.telegrambots.api.methods.send.SendMediaGroup
 import org.telegram.telegrambots.api.methods.send.SendMessage
-import org.telegram.telegrambots.api.methods.send.SendPhoto
-import org.telegram.telegrambots.api.methods.updatingmessages.DeleteMessage
-import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageCaption
+import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageText
 import org.telegram.telegrambots.api.objects.Message
 import org.telegram.telegrambots.api.objects.PhotoSize
 import org.telegram.telegrambots.api.objects.Update
@@ -63,10 +66,6 @@ import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardButto
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardRow
 
 import org.telegram.telegrambots.exceptions.TelegramApiException
-import org.telegram.telegrambots.exceptions.TelegramApiRequestException
-import org.telegram.telegrambots.logging.BotLogger
-import org.telegram.telegrambots.updateshandlers.SentCallback
-import java.lang.Exception
 import java.util.*
 import kotlin.concurrent.schedule
 
@@ -146,23 +145,59 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
             .input(0)
             .action {
                 val endUser = it.user()
+
+                var orderList = userMap[endUser]
+                if (orderList == null) {
+                    orderList = mutableListOf()
+                }
+
                 val order = Order(
+                        id = orderList.size + 1,
                         telegram = endUser.username(),
                         name = "${endUser.lastName()} ${endUser.firstName()}",
                         questionState = Order.QuestionState.ENTER_NAME,
                         chatId = it.chatId())
 
-                var orderList = userMap[endUser]
-                if (orderList == null) {
-                    orderList = mutableListOf(order)
-                } else {
-                    orderList.add(order)
-                }
+                orderList.add(order)
                 userMap += (endUser to orderList)
 
                 silent.send(CREATE_POST_TEXT.withEmoji(), it.chatId())
                 silent.send(ENTER_NAME, it.chatId())
             }.build()
+
+    fun setApartmentsStateAbility() = Ability.builder()
+            .name(BotCommons.COMMAND_APARTMENT_STATE)
+            .locality(Locality.ALL)
+            .privacy(Privacy.PUBLIC)
+            .input(0)
+            .action {
+                printAllOrdersAndProcessRented(it)
+            }
+            .build()
+
+    private fun printAllOrdersAndProcessRented(msgContext: MessageContext) {
+        val publishedPosts = userMap[msgContext.user()]?.filter { it.sharedMessageId != null }
+        if (publishedPosts != null && !publishedPosts.isEmpty()) {
+            publishedPosts.forEach { order ->
+                val sendMessageWithOrder = SendMessage(msgContext.chatId(),
+                        order.createPost().withEmoji())
+                sendMessageWithOrder.enableHtml(true)
+                val apartmentState = if (order.isFree) {
+                    Order.ApartmentState.RENTED
+                } else Order.ApartmentState.FREE
+                val inlineButton = InlineKeyboardButton(apartmentState.text)
+                        .setCallbackData("${apartmentState.callbackData}_${order.sharedMessageId}")
+                val inlineKeyboard = InlineKeyboardMarkup()
+                        .setKeyboard(listOf(listOf(inlineButton)))
+                sendMessageWithOrder.replyMarkup = inlineKeyboard
+                sendMessageToTelegram(sendMessageWithOrder)
+
+                sendPhotosAlbum(msgContext.chatId(), order)
+            }
+        } else {
+            silent.send(ERROR_RENTED_COMMAND, msgContext.chatId())
+        }
+    }
 
     fun callbackAbility(): Ability {
         return Ability.builder()
@@ -171,6 +206,10 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                 .privacy(Privacy.PUBLIC)
                 .action {
                     val currentUserOrder = userMap[it.user()]?.last()
+
+                    if (processShareToChannelCallback(it)) return@action
+                    if (processApartmentStateCallback(it)) return@action
+
                     when (currentUserOrder?.questionState) {
                         Order.QuestionState.ENTER_NAME -> processName(it)
                         Order.QuestionState.ENTER_APARTMENT -> processApartmentType(it)
@@ -189,6 +228,51 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                     }
                 }
                 .build()
+    }
+
+    private fun RentBot.processShareToChannelCallback(it: MessageContext): Boolean {
+        val callbackData = it.update()?.callbackQuery?.data
+        callbackData?.let {
+            if (it.startsWith(SHARE_TO_CHANNEL_CALLBACK, ignoreCase = true)) {
+                //TODO parse regular expression with userId and orderId
+                /*val msg = SendMessage(KVARTIR_HUB_CHAT_ID, currentUserOrder?.createPost()?.withEmoji())
+                msg.enableHtml(true)
+                currentUserOrder?.sharedMessageId = sendMessage(msg)?.messageId*/
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun RentBot.processApartmentStateCallback(msgContext: MessageContext): Boolean {
+        val callbackData = msgContext.update()?.callbackQuery?.data
+        callbackData?.let {
+            val orderMessageIdStr = it.substringAfterLast("_")
+            val orderMsgId = try {
+                orderMessageIdStr.toInt()
+            } catch (e: NumberFormatException) {
+                return@let
+            }
+            val orderList = userMap[msgContext.user()]
+            val order = orderList?.firstOrNull { post -> post.sharedMessageId == orderMsgId }
+            if (it.startsWith(Order.ApartmentState.FREE.callbackData, ignoreCase = true)) {
+                order?.isFree = true
+            } else if (it.startsWith(Order.ApartmentState.RENTED.callbackData, ignoreCase = true)) {
+                order?.isFree = false
+            }
+
+            val editMessageText = EditMessageText()
+            editMessageText.chatId = KVARTIR_HUB_CHAT_ID
+            editMessageText.messageId = orderMsgId
+            editMessageText.text = order?.createPost()?.withEmoji()
+            editMessageText.enableHtml(true)
+            silent.execute(editMessageText)
+
+            silent.send(APARTMENT_STATE_CHANGED, msgContext.chatId())
+
+            return true
+        }
+        return false
     }
 
     private fun processName(it: MessageContext) {
@@ -525,6 +609,16 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                     val sendMessageWithOrder = SendMessage(ID_OF_GROUP_WITH_POSTS,
                             currentUserOrder?.createPost()?.withEmoji())
                     sendMessageWithOrder.enableHtml(true)
+
+                    val inlineKeyboard = InlineKeyboardMarkup()
+                    val callbackData = "$SHARE_TO_CHANNEL_CALLBACK?" +
+                            "$PARAMETER_USER_ID=${msgContext.user()?.id()}&" +
+                            "$PARAMETER_ORDER_ID=${currentUserOrder?.id}"
+
+                    inlineKeyboard.keyboard = listOf(listOf(
+                            InlineKeyboardButton(SHARE_ACTION)
+                                    .setCallbackData(callbackData)))
+                    sendMessageWithOrder.replyMarkup = inlineKeyboard
                     sendMessageToTelegram(sendMessageWithOrder)
 
                     sendPhotosAlbum(ID_OF_GROUP_WITH_POSTS, currentUserOrder)
@@ -543,10 +637,7 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                     sendMessagePreview.enableHtml(true)
                     sendMessageToTelegram(sendMessagePreview)
 
-                    val sendMessageWithOrder = SendMessage(msgContext.chatId(),
-                            currentUserOrder?.createPost()?.withEmoji())
-                    sendMessageWithOrder.enableHtml(true)
-                    sendMessageToTelegram(sendMessageWithOrder)
+                    sendOrderText(msgContext.chatId(), currentUserOrder)
 
                     askAboutCorrectnessOfPost(msgContext.chatId())
                 }
@@ -556,9 +647,16 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         userMap[msgContext.user()] = orderList
     }
 
-    private fun sendPhotosAlbum(chatId: Long, currentUserOrder: Order?) {
-        currentUserOrder?.isWithPhoto?.let {
-            currentUserOrder.photoIds?.let {
+    private fun sendOrderText(chatId: Long, order: Order?) {
+        val sendMessageWithOrder = SendMessage(chatId,
+                order?.createPost()?.withEmoji())
+        sendMessageWithOrder.enableHtml(true)
+        sendMessageToTelegram(sendMessageWithOrder)
+    }
+
+    private fun sendPhotosAlbum(chatId: Long, order: Order?) {
+        order?.isWithPhoto?.let {
+            order.photoIds?.let {
                 val inputMediaPhotos = it.map { fileId -> InputMediaPhoto(fileId, null) }
                 val mediaGroup = SendMediaGroup(chatId, inputMediaPhotos)
                 try {

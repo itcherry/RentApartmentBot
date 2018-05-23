@@ -69,7 +69,10 @@ interface TextConstants {
                 "Если вам нужно что-то изменить - жмите на <b>Отмена</b>," +
                 " после чего создайте новую публикацию с помощью команды /$COMMAND_CREATE_POST"
         const val PUBLISH_CANCELLED = "Публикация отменена"
-
+        const val ERROR_RENTED_COMMAND = "У вас нет опубликованых обьявлений. " +
+                "Создайте новый пост с помощью команды /$COMMAND_CREATE_POST"
+        const val APARTMENT_STATE_CHANGED = ":thumbsup: Состояние успешно изменено. " +
+                "Вы можете убедится в этом, посмотрите на публикацию в @ApartmentHub"
         // Helper
         const val GOOD = "Отлично"
         const val COOL = ":clap: Замечательно!"

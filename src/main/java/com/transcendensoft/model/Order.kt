@@ -15,6 +15,7 @@ import com.transcendensoft.model.TextConstants.Companion.WHO_AM_I
 import java.io.Serializable
 
 data class Order(
+        var id: Int,
         var name: String = "",
         var price: String = "",
         var square: Int = 0,
@@ -30,7 +31,8 @@ data class Order(
         var isFree: Boolean = true,
         var isWithPhoto: Boolean = false,
         var photoIds: MutableList<String?>? = mutableListOf(),
-        var chatId: Long = 0L) : Serializable {
+        var chatId: Long = 0L,
+        var sharedMessageId: Int? = null) : Serializable {
 
     fun createPost(): String {
         val apartmentString = if (apartment == Apartment.FLAT) {
@@ -43,7 +45,7 @@ data class Order(
         val masterString = if (master != null) master!!.text.toLowerCase() else ""
         val phoneString = if (!phone.isNullOrBlank()) "<b>$PHONE</b> $phone" else ""
         val freeString = if (isFree) APARTMENTS_FREE else APARTMENTS_RENTED
-        val photoString = if(isWithPhoto) PHOTO_OF_APARTMENTS else ""
+        val photoString = if (isWithPhoto) PHOTO_OF_APARTMENTS else ""
 
         return """$HASHTAG_RENT
             |$RENT $apartmentString $addressString
@@ -91,7 +93,7 @@ data class Order(
         AGENCY("Агенство", "callbackAgency")
     }
 
-    enum class Action(val text: String, val callbackData: String){
+    enum class Action(val text: String, val callbackData: String) {
         YES("Да", "callbackYes"),
         NO("Нет", "callbackNo")
     }
@@ -114,6 +116,11 @@ data class Order(
 
     enum class PublishState(val text: String, val callbackData: String) {
         PUBLISH("Опубликовать", "callbackPublish"),
-        CANCEL("Отмена","callbackCancel")
+        CANCEL("Отмена", "callbackCancel")
+    }
+
+    enum class ApartmentState(val text: String, val callbackData: String) {
+        FREE("Отметить, что уже свободны", "apartmentFreeCallback"),
+        RENTED("Отметить, что уже сданы", "apartmentRentedCallback")
     }
 }
