@@ -55,7 +55,6 @@ import org.telegram.telegrambots.api.methods.AnswerCallbackQuery
 import org.telegram.telegrambots.api.methods.send.SendMediaGroup
 import org.telegram.telegrambots.api.methods.send.SendMessage
 import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageText
-import org.telegram.telegrambots.api.objects.Message
 import org.telegram.telegrambots.api.objects.PhotoSize
 import org.telegram.telegrambots.api.objects.Update
 import org.telegram.telegrambots.api.objects.media.InputMediaPhoto
@@ -182,14 +181,7 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                 val sendMessageWithOrder = SendMessage(msgContext.chatId(),
                         order.createPost().withEmoji())
                 sendMessageWithOrder.enableHtml(true)
-                val apartmentState = if (order.isFree) {
-                    Order.ApartmentState.RENTED
-                } else Order.ApartmentState.FREE
-                val inlineButton = InlineKeyboardButton(apartmentState.text)
-                        .setCallbackData("${apartmentState.callbackData}_${order.sharedMessageId}")
-                val inlineKeyboard = InlineKeyboardMarkup()
-                        .setKeyboard(listOf(listOf(inlineButton)))
-                sendMessageWithOrder.replyMarkup = inlineKeyboard
+                sendMessageWithOrder.replyMarkup = inlineKeyboardForApartmentState(order)
                 sendMessageToTelegram(sendMessageWithOrder)
 
                 sendPhotosAlbum(msgContext.chatId(), order)
@@ -197,6 +189,17 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         } else {
             silent.send(ERROR_RENTED_COMMAND, msgContext.chatId())
         }
+    }
+
+    private fun inlineKeyboardForApartmentState(order: Order): InlineKeyboardMarkup? {
+        val apartmentState = if (order.isFree) {
+            Order.ApartmentState.RENTED
+        } else Order.ApartmentState.FREE
+        val inlineButton = InlineKeyboardButton(apartmentState.text)
+                .setCallbackData("${apartmentState.callbackData}_${order.sharedMessageId}")
+        val inlineKeyboard = InlineKeyboardMarkup()
+                .setKeyboard(listOf(listOf(inlineButton)))
+        return inlineKeyboard
     }
 
     fun callbackAbility(): Ability {
@@ -230,15 +233,29 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                 .build()
     }
 
-    private fun RentBot.processShareToChannelCallback(it: MessageContext): Boolean {
-        val callbackData = it.update()?.callbackQuery?.data
+    private fun RentBot.processShareToChannelCallback(msgContext: MessageContext): Boolean {
+        val callbackData = msgContext.update()?.callbackQuery?.data
         callbackData?.let {
             if (it.startsWith(SHARE_TO_CHANNEL_CALLBACK, ignoreCase = true)) {
-                //TODO parse regular expression with userId and orderId
-                /*val msg = SendMessage(KVARTIR_HUB_CHAT_ID, currentUserOrder?.createPost()?.withEmoji())
-                msg.enableHtml(true)
-                currentUserOrder?.sharedMessageId = sendMessage(msg)?.messageId*/
-                return true
+                val destructuredRegex = ("$SHARE_TO_CHANNEL_CALLBACK\\?" +
+                        "$PARAMETER_USER_ID=(\\d+)&$PARAMETER_ORDER_ID=(\\d+)").toRegex()
+
+                destructuredRegex.matchEntire(it)
+                        ?.destructured
+                        ?.let { (userId, orderId) ->
+                            val user = userMap.keys.firstOrNull { endUser -> endUser.id() == userId.toInt() }
+                            val orderList = userMap[user]
+                            val order = orderList?.firstOrNull { localOrder -> localOrder.id == orderId.toInt() }
+                            order?.let {
+                                val msg = SendMessage(KVARTIR_HUB_CHAT_ID, it.createPost().withEmoji())
+                                msg.enableHtml(true)
+                                it.sharedMessageId = sendMessage(msg)?.messageId
+
+                                userMap[user] = orderList
+                                return true
+                            }
+                        }
+                        ?: TODO()
             }
         }
         return false
@@ -261,14 +278,31 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                 order?.isFree = false
             }
 
-            val editMessageText = EditMessageText()
-            editMessageText.chatId = KVARTIR_HUB_CHAT_ID
-            editMessageText.messageId = orderMsgId
-            editMessageText.text = order?.createPost()?.withEmoji()
-            editMessageText.enableHtml(true)
-            silent.execute(editMessageText)
+            userMap[msgContext.user()] = orderList
 
-            silent.send(APARTMENT_STATE_CHANGED, msgContext.chatId())
+            val editMessageTextKvartirHub = EditMessageText()
+            editMessageTextKvartirHub.chatId = KVARTIR_HUB_CHAT_ID
+            editMessageTextKvartirHub.messageId = orderMsgId
+            editMessageTextKvartirHub.text = order?.createPost()?.withEmoji()
+            editMessageTextKvartirHub.enableHtml(true)
+
+            silent.execute(editMessageTextKvartirHub)
+
+            val editMessageTextInnerChat = EditMessageText()
+            editMessageTextInnerChat.chatId = msgContext.chatId().toString()
+            editMessageTextInnerChat.messageId = msgContext.update()?.callbackQuery?.message?.messageId
+            editMessageTextInnerChat.text = order?.createPost()?.withEmoji()
+            editMessageTextInnerChat.replyMarkup = inlineKeyboardForApartmentState(order!!)
+            editMessageTextInnerChat.enableHtml(true)
+
+            silent.execute(editMessageTextInnerChat)
+
+            val answerCallbackQuery = AnswerCallbackQuery()
+            answerCallbackQuery.callbackQueryId = msgContext.update().callbackQuery?.id
+            answerCallbackQuery.showAlert = true
+            silent.execute(answerCallbackQuery)
+
+            silent.send(APARTMENT_STATE_CHANGED.withEmoji(), msgContext.chatId())
 
             return true
         }
@@ -656,13 +690,15 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
 
     private fun sendPhotosAlbum(chatId: Long, order: Order?) {
         order?.isWithPhoto?.let {
-            order.photoIds?.let {
-                val inputMediaPhotos = it.map { fileId -> InputMediaPhoto(fileId, null) }
-                val mediaGroup = SendMediaGroup(chatId, inputMediaPhotos)
-                try {
-                    sendMediaGroup(mediaGroup)
-                } catch (e: TelegramApiException) {
-                    e.printStackTrace()
+            if(it) {
+                order.photoIds?.let {
+                    val inputMediaPhotos = it.map { fileId -> InputMediaPhoto(fileId, null) }
+                    val mediaGroup = SendMediaGroup(chatId, inputMediaPhotos)
+                    try {
+                        sendMediaGroup(mediaGroup)
+                    } catch (e: TelegramApiException) {
+                        e.printStackTrace()
+                    }
                 }
             }
         }

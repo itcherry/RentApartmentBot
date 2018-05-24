@@ -72,7 +72,8 @@ interface TextConstants {
         const val ERROR_RENTED_COMMAND = "У вас нет опубликованых обьявлений. " +
                 "Создайте новый пост с помощью команды /$COMMAND_CREATE_POST"
         const val APARTMENT_STATE_CHANGED = ":thumbsup: Состояние успешно изменено. " +
-                "Вы можете убедится в этом, посмотрите на публикацию в @ApartmentHub"
+                "Вы можете убедится в этом, посмотрите на публикацию в @ApartmentHub.\n\n" +
+                "Список команд смотреть сдесь: /$COMMAND_HELP"
         // Helper
         const val GOOD = "Отлично"
         const val COOL = ":clap: Замечательно!"

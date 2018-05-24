@@ -2,9 +2,9 @@ package com.transcendensoft.model
 
 interface BotCommons {
     companion object {
-        const val TOKEN = "TOKEN"
+        const val TOKEN = "586977338:AAEHGaEAwj9phkpEZ6QY0P3SbvGCXCkj_GQ"
         const val BOT_NAME = "SdamKvartirBot"
-        const val USER_TELEGRAM_ID = 0L
+        const val USER_TELEGRAM_ID = 252991258
 
         const val COMMAND_START = "start";
         const val COMMAND_HELP = "help";
@@ -23,7 +23,7 @@ interface BotCommons {
 
         //DB
         const val USER_MAP = "userMap"
-        const val ID_OF_GROUP_WITH_POSTS = 0L
+        const val ID_OF_GROUP_WITH_POSTS = -252092566L
 
         // Share post to KvartirHub
         const val SHARE_TO_CHANNEL_CALLBACK = "shareToChannelCallback"
