@@ -1,20 +1,20 @@
-package com.transcendensoft.model
+package com.transcendensoft.model.rent
 
-import com.transcendensoft.model.TextConstants.Companion.APARTMENTS_FREE
-import com.transcendensoft.model.TextConstants.Companion.APARTMENTS_RENTED
-import com.transcendensoft.model.TextConstants.Companion.FACILITIES
-import com.transcendensoft.model.TextConstants.Companion.HASHTAG_RENT
-import com.transcendensoft.model.TextConstants.Companion.I_AM
-import com.transcendensoft.model.TextConstants.Companion.PHONE
-import com.transcendensoft.model.TextConstants.Companion.PHOTO_OF_APARTMENTS
-import com.transcendensoft.model.TextConstants.Companion.PRICE
-import com.transcendensoft.model.TextConstants.Companion.RENT
-import com.transcendensoft.model.TextConstants.Companion.SQUARE
-import com.transcendensoft.model.TextConstants.Companion.TELEGRAM
-import com.transcendensoft.model.TextConstants.Companion.WHO_AM_I
+import com.transcendensoft.model.rent.RentBotTextConstants.Companion.APARTMENTS_FREE
+import com.transcendensoft.model.rent.RentBotTextConstants.Companion.APARTMENTS_RENTED
+import com.transcendensoft.model.rent.RentBotTextConstants.Companion.FACILITIES
+import com.transcendensoft.model.rent.RentBotTextConstants.Companion.HASHTAG_RENT
+import com.transcendensoft.model.rent.RentBotTextConstants.Companion.I_AM
+import com.transcendensoft.model.rent.RentBotTextConstants.Companion.PHONE
+import com.transcendensoft.model.rent.RentBotTextConstants.Companion.PHOTO_OF_APARTMENTS
+import com.transcendensoft.model.rent.RentBotTextConstants.Companion.PRICE
+import com.transcendensoft.model.rent.RentBotTextConstants.Companion.RENT
+import com.transcendensoft.model.rent.RentBotTextConstants.Companion.SQUARE
+import com.transcendensoft.model.rent.RentBotTextConstants.Companion.TELEGRAM
+import com.transcendensoft.model.rent.RentBotTextConstants.Companion.WHO_AM_I
 import java.io.Serializable
 
-data class Order(
+data class RentPost(
         var id: Int,
         var name: String = "",
         var price: String = "",
