@@ -24,6 +24,7 @@ dependencies {
     compile "org.telegram:telegrambots:3.6"
     compile "org.telegram:telegrambots-abilities:3.6"
     compile 'com.vdurmont:emoji-java:4.0.0'
+    compile "org.jetbrains.kotlin:kotlin-reflect"
     compile 'io.github.microutils:kotlin-logging:1.5.4'
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.+'
     compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.+'

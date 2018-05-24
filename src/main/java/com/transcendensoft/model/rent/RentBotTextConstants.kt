@@ -6,9 +6,8 @@ import com.transcendensoft.model.rent.RentBotCommons.Companion.COMMAND_HELP
 
 interface RentBotTextConstants {
     companion object {
-        // Hashtags
+        // Hashtag
         const val HASHTAG_RENT = "#сдам_kvartirHUB"
-        const val HASHTAG_RENT_OUT = "#сниму_kvartirHUB"
 
         // Post creation
         const val PRICE = ":moneybag: Цена:"
@@ -54,7 +53,7 @@ interface RentBotTextConstants {
         const val ENTER_MASTER = "Выберите из списка кем вы являетесь."
         const val ENTER_PHONE = "Введите ваш номер телефона"
         const val LOAD_PHOTO_QUESTION = "Текстовая публикация создана. Вы хотите загрузить фото ваших апартаментов?" +
-                "\n\nШанс на то, что у вас снимут квартиру выше, если вы добавите фото :camera:"
+                "\n\nШанс на то, что у вас снимут апартаменты выше, если вы добавите фото :camera:"
         const val LOAD_PHOTO = ":clap: Замечательно! Теперь загрузите фото ваших апартаментов." +
                 " Загрузите их как фото, а не как файл, пожалуйста."
         const val FINISH = "Отлично! Вы успешно создали публикацию о сдаче апартаментов.:thumbsup: :thumbsup: :thumbsup:\n" +

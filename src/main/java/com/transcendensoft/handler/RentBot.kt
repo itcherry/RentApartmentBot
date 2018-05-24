@@ -1,5 +1,9 @@
 package com.transcendensoft.handler
 
+import com.transcendensoft.model.Action
+import com.transcendensoft.model.Apartment
+import com.transcendensoft.model.FlatRooms
+import com.transcendensoft.model.PublishState
 import com.transcendensoft.model.rent.RentBotCommons
 import com.transcendensoft.model.rent.RentBotCommons.Companion.BOT_NAME
 import com.transcendensoft.model.rent.RentBotCommons.Companion.COMMAND_CANCEL
@@ -48,7 +52,10 @@ import com.transcendensoft.model.rent.RentBotTextConstants.Companion.POST_PREVIE
 import com.transcendensoft.model.rent.RentBotTextConstants.Companion.PUBLISH_CANCELLED
 import com.transcendensoft.model.rent.RentBotTextConstants.Companion.START
 import com.transcendensoft.model.rent.RentBotTextConstants.Companion.SURE_TO_PUBLISH
+import com.transcendensoft.util.logger
 import com.transcendensoft.util.withEmoji
+import org.mapdb.CC.LOG
+import org.slf4j.LoggerFactory
 import org.telegram.abilitybots.api.bot.AbilityBot
 import org.telegram.abilitybots.api.objects.*
 import org.telegram.telegrambots.api.methods.AnswerCallbackQuery
@@ -63,12 +70,19 @@ import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboardMarkup
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.InlineKeyboardButton
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardButton
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardRow
+import org.telegram.telegrambots.bots.DefaultBotOptions
 
 import org.telegram.telegrambots.exceptions.TelegramApiException
+import org.telegram.telegrambots.logging.BotLogger
 import java.util.*
+import java.util.logging.Logger
 import kotlin.concurrent.schedule
 
 class RentBot : AbilityBot(TOKEN, BOT_NAME) {
+    companion object {
+        val LOG by logger()
+    }
+
     private val userMap = db.getMap<EndUser, MutableList<RentPost>>(USER_MAP)
 
     override fun creatorId(): Int = USER_TELEGRAM_ID
@@ -80,6 +94,7 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
             .input(0)
             .action { ctx ->
                 silent.send(START.withEmoji(), ctx.chatId())
+                LOG.info("User ${ctx.user()?.username()} started bot.")
                 //println(ResourceBundle.getBundle("i18n/strings", Locale.forLanguageTag("ua_UK")).getString("welcome"))
             }
             .build()
@@ -95,6 +110,8 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                 sendMessage.text = HELP_TEXT.trimMargin()
                 sendMessage.enableHtml(true)
                 sendMessageToTelegram(sendMessage)
+
+                LOG.info("User ${ctx.user()?.username()} ask help.")
             }
             .build()
 
@@ -111,10 +128,11 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                     val textList = ctx.arguments().slice(1 until ctx.arguments().size)
                     val text = textList.joinToString(separator = " ")
                     silent.send("Модератор: $text", userOrder.chatId)
+
+                    LOG.info("Creator send message to ${endUser?.username()}. Message: $text")
                 } else {
                     silent.send("Такого пользователя не существует в БД.", ctx.chatId())
                 }
-
             }.build()
 
     fun cancelAbility() = Ability.builder()
@@ -130,8 +148,10 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                 if (currentUserOrder?.questionState !in setOf(RentPost.QuestionState.FINISHED, null) && currentUserOrder != null) {
                     orderList.remove(currentUserOrder)
                     silent.send(CANCELLED, it.chatId())
+                    LOG.info("User ${it.user()?.username()} cancelled order $currentUserOrder")
                 } else {
                     silent.send(ERROR_CANCEL.withEmoji(), it.chatId())
+                    LOG.info("User ${it.user()?.username()} invokes error of cancel order $currentUserOrder")
                 }
 
                 userMap[it.user()] = orderList
@@ -145,6 +165,7 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
             .action {
                 val endUser = it.user()
 
+                db.clear()
                 var orderList = userMap[endUser]
                 if (orderList == null) {
                     orderList = mutableListOf()
@@ -162,6 +183,7 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
 
                 silent.send(CREATE_POST_TEXT.withEmoji(), it.chatId())
                 silent.send(ENTER_NAME, it.chatId())
+                LOG.info("User ${it.user()?.username()} starts creating post")
             }.build()
 
     fun setApartmentsStateAbility() = Ability.builder()
@@ -185,9 +207,12 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                 sendMessageToTelegram(sendMessageWithOrder)
 
                 sendPhotosAlbum(msgContext.chatId(), order)
+
+                LOG.info("User ${msgContext.user()?.username()} requests all orders to change isFree")
             }
         } else {
             silent.send(ERROR_RENTED_COMMAND, msgContext.chatId())
+            LOG.info("User ${msgContext.user()?.username()} user requests all orders ERROR.")
         }
     }
 
@@ -251,11 +276,13 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                                 msg.enableHtml(true)
                                 it.sharedMessageId = sendMessage(msg)?.messageId
 
+                                LOG.info("Share post to KvartirHub $it")
                                 userMap[user] = orderList
                                 return true
                             }
                         }
-                        ?: TODO()
+                        ?: LOG.info("Couldn't share post to KvartirHub because. couldn't parse string by regex: $it")
+
             }
         }
         return false
@@ -304,6 +331,8 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
 
             silent.send(APARTMENT_STATE_CHANGED.withEmoji(), msgContext.chatId())
 
+            LOG.info("User ${msgContext.user()?.username()} changed order : $order")
+
             return true
         }
         return false
@@ -317,6 +346,8 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         currentUserOrder?.questionState = ENTER_APARTMENT
         userMap[it.user()] = orderList
 
+        LOG.info("Ask name of user ${it.user()}")
+
         askAboutApartment(it, currentUserOrder)
     }
 
@@ -326,7 +357,7 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                 "${GOOD} ${currentUserRentPost?.name}!\n${ENTER_APARTMENT_TYPE}".withEmoji())
         val inlineKeyboardMarkup = getInlineKeyboard {
             val inlineKeyboardList = mutableListOf<InlineKeyboardButton>()
-            RentPost.Apartment.values().forEach {
+            Apartment.values().forEach {
                 inlineKeyboardList += InlineKeyboardButton(it.infinitiveText)
                         .setCallbackData(it.callbackData)
             }
@@ -342,12 +373,12 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         val orderList = userMap[it.user()]
         val currentUserOrder = orderList?.last()
 
-        val apartment = RentPost.Apartment.values()
+        val apartment = Apartment.values()
                 .firstOrNull { apartment -> it.update()?.callbackQuery?.data == apartment.callbackData }
         currentUserOrder?.apartment = apartment
 
         when (it.update()?.callbackQuery?.data) {
-            RentPost.Apartment.FLAT.callbackData -> {
+            Apartment.FLAT.callbackData -> {
                 // Process database
                 currentUserOrder?.questionState = ENTER_FLAT_ROOMS
 
@@ -361,6 +392,9 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                 silent.execute(msg)
             }
         }
+
+        LOG.info("Ask apartment type of user ${it.user()}. Order: $currentUserOrder")
+
         // Update in db
         userMap[it.user()] = orderList
     }
@@ -371,7 +405,7 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         val replyKeyboardMarkup = ReplyKeyboardMarkup()
 
         val keyboardRows = mutableListOf<KeyboardRow>()
-        RentPost.FlatRooms.values().forEach {
+        FlatRooms.values().forEach {
             val keyboardRow = KeyboardRow()
             keyboardRow += KeyboardButton(it.infinitiveText)
             keyboardRows += keyboardRow
@@ -387,13 +421,11 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         val orderList = userMap[it.user()]
         val currentUserOrder = orderList?.last()
 
-        val flatRooms = RentPost.FlatRooms.values()
+        val flatRooms = FlatRooms.values()
                 .firstOrNull { flatRoom -> it.update()?.message?.text == flatRoom.infinitiveText }
 
         if (flatRooms != null) {
             currentUserOrder?.flatRooms = flatRooms
-            println("Current order: $currentUserOrder")
-
             currentUserOrder?.questionState = RentPost.QuestionState.ENTER_PRICE
 
             // Update in db
@@ -402,6 +434,8 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
             val msg = SendMessage(it.chatId(), "$COOL\n\n$ENTER_PRICE".withEmoji())
             msg.enableHtml(true)
             silent.execute(msg)
+
+            LOG.info("Ask roomQuantity of user ${it.user()}. Order: $currentUserOrder")
         } else {
             askAboutRoomQuantity(it)
         }
@@ -417,6 +451,8 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         // Update in db
         userMap[it.user()] = orderList
         silent.send(ENTER_ADDRESS.withEmoji(), it.chatId())
+
+        LOG.info("Ask price of user ${it.user()}. Order: $currentUserOrder")
     }
 
     private fun processAddress(it: MessageContext) {
@@ -429,6 +465,8 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         // Update in db
         userMap[it.user()] = orderList
         silent.send(ENTER_SQUARE, it.chatId())
+
+        LOG.info("Ask address of user ${it.user()}. Order: $currentUserOrder")
     }
 
     private fun processSquare(it: MessageContext) {
@@ -447,6 +485,8 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         // Update in db
         userMap[it.user()] = orderList
         silent.send(ENTER_FACILITIES, it.chatId())
+
+        LOG.info("Ask square of user ${it.user()}. Order: $currentUserOrder")
     }
 
     private fun processFacilities(it: MessageContext) {
@@ -459,6 +499,8 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         // Update in db
         userMap[it.user()] = orderList
         silent.send("${AWESOME}!\n${ENTER_COMMENT}", it.chatId())
+
+        LOG.info("Ask facilities of user ${it.user()}. Order: $currentUserOrder")
     }
 
     private fun processComment(it: MessageContext) {
@@ -472,6 +514,8 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         userMap[it.user()] = orderList
 
         askAboutMaster(it)
+
+        LOG.info("Ask comment of user ${it.user()}. Order: $currentUserOrder")
     }
 
     private fun askAboutMaster(it: MessageContext) {
@@ -505,6 +549,8 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
             // Update in db
             userMap[it.user()] = orderList
             silent.send("$LAST_STEP\n$ENTER_PHONE", it.chatId())
+
+            LOG.info("Ask master of user ${it.user()}. Order: $currentUserOrder")
         } else {
             askAboutMaster(it)
         }
@@ -521,6 +567,7 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         userMap[it.user()] = orderList
 
         askQuestionAboutPhoto(it)
+        LOG.info("Ask phone of user ${it.user()}. Order: $currentUserOrder")
     }
 
     private fun askQuestionAboutPhoto(it: MessageContext) {
@@ -528,7 +575,7 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         val sendMessage = SendMessage(it.chatId(), LOAD_PHOTO_QUESTION.withEmoji())
         val inlineKeyboardMarkup = getInlineKeyboard {
             val inlineKeyboardList = mutableListOf<InlineKeyboardButton>()
-            RentPost.Action.values().forEach {
+            Action.values().forEach {
                 inlineKeyboardList += InlineKeyboardButton(it.text)
                         .setCallbackData(it.callbackData)
             }
@@ -542,16 +589,16 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         val orderList = userMap[it.user()]
         val currentUserOrder = orderList?.last()
 
-        val action = RentPost.Action.values()
+        val action = Action.values()
                 .firstOrNull { action -> it.update()?.callbackQuery?.data == action.callbackData }
-        currentUserOrder?.isWithPhoto = action == RentPost.Action.YES
+        currentUserOrder?.isWithPhoto = action == Action.YES
 
         when (action) {
-            RentPost.Action.YES -> {
+            Action.YES -> {
                 currentUserOrder?.questionState = ENTER_LOAD_PHOTO
                 silent.send(LOAD_PHOTO.withEmoji(), it.chatId())
             }
-            RentPost.Action.NO -> {
+            Action.NO -> {
                 currentUserOrder?.questionState = FINISHED
                 processFinished(it)
             }
@@ -582,9 +629,11 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                     // Update in db
                     userMap[it.user()] = innerOrderList
                 }
+                LOG.info("User ${it.user().username()} loaded photos. Order: $innerCurrentUserOrder")
             }
         } else {
             silent.send(ERROR_SEND_PHOTO, it.chatId())
+            LOG.warn("User ${it.user().username()} didn't load the photo. But entered another shit.")
         }
 
         // Update in db
@@ -620,7 +669,7 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         sendMessage.enableHtml(true)
         val inlineKeyboardMarkup = getInlineKeyboard {
             val inlineKeyboardList = mutableListOf<InlineKeyboardButton>()
-            RentPost.PublishState.values().forEach {
+            PublishState.values().forEach {
                 inlineKeyboardList += InlineKeyboardButton(it.text)
                         .setCallbackData(it.callbackData)
             }
@@ -636,10 +685,10 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
 
         if (msgContext.update().hasCallbackQuery()) {
             sendAnswerToInlineButton(msgContext)
-            val publishState = RentPost.PublishState.values()
+            val publishState = PublishState.values()
                     .firstOrNull { publish -> msgContext.update()?.callbackQuery?.data == publish.callbackData }
             when (publishState) {
-                RentPost.PublishState.PUBLISH -> {
+                PublishState.PUBLISH -> {
                     val sendMessageWithOrder = SendMessage(ID_OF_GROUP_WITH_POSTS,
                             currentUserOrder?.createPost()?.withEmoji())
                     sendMessageWithOrder.enableHtml(true)
@@ -660,11 +709,15 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                     val sendMessagePublished = SendMessage(msgContext.chatId(), FINISH.withEmoji())
                     sendMessagePublished.enableHtml(true)
                     sendMessageToTelegram(sendMessagePublished)
+
+                    LOG.info("User ${msgContext.user().username()} published post. $currentUserOrder")
                 }
-                RentPost.PublishState.CANCEL -> {
+                PublishState.CANCEL -> {
                     silent.send(PUBLISH_CANCELLED, msgContext.chatId())
                     helpAbility().action().accept(msgContext)
                     orderList?.remove(currentUserOrder)
+
+                    LOG.info("User ${msgContext.user().username()} cancelled post. $currentUserOrder")
                 }
                 null -> {
                     val sendMessagePreview = SendMessage(msgContext.chatId(), POST_PREVIEW.withEmoji())
@@ -674,6 +727,8 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                     sendOrderText(msgContext.chatId(), currentUserOrder)
 
                     askAboutCorrectnessOfPost(msgContext.chatId())
+
+                    LOG.info("User ${msgContext.user().username()} entered shit when asking publish or cancel. $currentUserOrder")
                 }
             }
         }
@@ -690,7 +745,7 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
 
     private fun sendPhotosAlbum(chatId: Long, rentPost: RentPost?) {
         rentPost?.isWithPhoto?.let {
-            if(it) {
+            if (it) {
                 rentPost.photoIds?.let {
                     val inputMediaPhotos = it.map { fileId -> InputMediaPhoto(fileId, null) }
                     val mediaGroup = SendMediaGroup(chatId, inputMediaPhotos)

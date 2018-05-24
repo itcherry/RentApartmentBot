@@ -4,9 +4,9 @@ import com.transcendensoft.model.rent.RentBotCommons.Companion.COMMAND_APARTMENT
 
 interface RentOutBotCommons {
     companion object {
-        const val TOKEN = "TOKEN"
+        const val TOKEN = "Token"
         const val BOT_NAME = "SnimuKvartirBot"
-        const val USER_TELEGRAM_ID = 0L
+        const val USER_TELEGRAM_ID = 0
 
         const val COMMAND_START = "start";
         const val COMMAND_HELP = "help";
@@ -23,7 +23,7 @@ interface RentOutBotCommons {
             """
 
         //DB
-        const val USER_MAP = "userMap"
+        const val USER_MAP = "userMapRentOut"
         const val ID_OF_GROUP_WITH_POSTS = 0L
 
         // Share post to KvartirHub

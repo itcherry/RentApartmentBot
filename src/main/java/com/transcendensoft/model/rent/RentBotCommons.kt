@@ -2,9 +2,9 @@ package com.transcendensoft.model.rent
 
 interface RentBotCommons {
     companion object {
-        const val TOKEN = "TOKEN"
+        const val TOKEN = "Token"
         const val BOT_NAME = "SdamKvartirBot"
-        const val USER_TELEGRAM_ID = 0L
+        const val USER_TELEGRAM_ID = 0
 
         const val COMMAND_START = "start";
         const val COMMAND_HELP = "help";
