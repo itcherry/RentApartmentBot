@@ -9,13 +9,14 @@ interface RentOutTextConstants {
         const val HASHTAG_RENT = "#сниму_kvartirHUB"
 
         // Post creation
-        const val PLACE = ":metro: Район"
+        const val PLACE = ":metro: Район:"
         const val PRICE = ":moneybag: Бюджет:"
         const val DATE = ":date: Ориентировочная дата:"
         const val PHONE = ":telephone: Телефон:"
         const val TELEGRAM = ":v: Телеграм:"
         const val RENT = ":house: Сниму"
         const val FACILITIES = "Чего хочу:"
+        const val ABOUT_RENTER = "О себе: "
         const val I_AM = ":bust_in_silhouette: Меня зовут"
 
         // Navigation and entering data
@@ -25,8 +26,8 @@ interface RentOutTextConstants {
         const val CANCELLED = "Создание текущей публикации отменено. Для создании новой используйте команду /${RentOutBotCommons.COMMAND_CREATE_POST}"
         const val ERROR_CANCEL = ":scream:Вы не можете отменить публикацию, так как вы не начали ее создавать." +
                 "\nКоманда доступна только после того, как вы начнете писать предложение (/${RentBotCommons.COMMAND_CREATE_POST})"
-        const val CREATE_POST_TEXT = "Просто следуй инструкциям и бот сгенерирует прекрасное предложение об аренде апартаментов :thumbsup:\n\n" +
-                "Шанс найти хорошшое жилье выше, когда четко прописаны требования :wink:\n\n" +
+        const val CREATE_POST_TEXT = "Просто следуй инструкциям и бот сгенерирует отличнейшее предложение об аренде апартаментов :thumbsup:\n\n" +
+                "Шанс найти хорошое жилье выше, когда четко прописаны требования :wink:\n\n" +
                 "Если вы отправили ошибочное предложение, отмените создание публикации с помощью команды " +
                 "/${RentOutBotCommons.COMMAND_CANCEL}."
         const val ENTER_NAME = "Как вас зовут?"
@@ -48,7 +49,7 @@ interface RentOutTextConstants {
         const val ENTER_REQUIRED_FACILITIES = "Укажите какие удобства вы ожидаете от апартаментов.\n\n" +
                 "Пример: бойлер, кондиционер, интернет, холодильник, тихие соседи, стиральная машина и т.д."
         const val ENTER_ABOUT_RENTER = "Опишите себя как личность. Помните, арендодатели ищут адекватных и платежеспособных съемщиков.\n" +
-                "Думаю вам стоит указать с кем вы хотите снимать апартаменты, усть ли вредные привычки, животные, дети.\n\n" +
+                "Думаю вам стоит указать с кем вы хотите снимать апартаменты, есть ли вредные привычки, животные, дети.\n\n" +
                 "<b>Пример:</b> я студент, ІТшник. Проблем с оплатой не будет. " +
                 "Не курю, редко выпиваю с друзьями, занимаюсь спортом. Без детей и животных. Жить буду сам."
 

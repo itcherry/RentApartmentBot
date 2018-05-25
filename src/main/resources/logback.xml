@@ -1,4 +1,6 @@
 <configuration>
+    <property name="USER_HOME" value="src/main/resources/logs"/>
+
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <!-- encoders are assigned the type
              ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
@@ -6,22 +8,32 @@
             <pattern>%d{HH:mm:ss.SSS} | %-5level: %msg %n</pattern>
         </encoder>
     </appender>
-    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>src/main/resources/logs/RentApartments.log</file>
-        <append>false</append>
-        <!-- encoders are assigned the type
-             ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+
+    <appender name="FILE-ENGINE-ERROR" class="ch.qos.logback.core.FileAppender">
+        <file>${USER_HOME}/${log.name}.error</file>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} | %-5level: %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
-    <root level="INFO">
-        <appender-ref ref="FILE" />
-        <appender-ref ref="STDOUT" />
-    </root>
-    <!-- We want error logging from this logger to go to an extra appender
-         It still inherits CONSOLE STDOUT from the root logger -->
-    <logger name="junit" level="INFO">
-        <appender-ref ref="STDOUT" />
+
+    <appender name="FILE-ENGINE" class="ch.qos.logback.core.FileAppender">
+        <file>${USER_HOME}/${log.name}.log</file>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} | %-5level: %msg %n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.transcendensoft" level="INFO"
+            additivity="false">
+        <appender-ref ref="FILE-ENGINE"/>
+        <appender-ref ref="STDOUT"/>
     </logger>
+
+    <root level="error">
+        <appender-ref ref="FILE-ENGINE-ERROR" />
+    </root>
+    <root level="info">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="FILE-ENGINE"/>
+    </root>
 </configuration>

@@ -19,7 +19,7 @@ data class RentOutPost(
         var apartment: Apartment? = null,
         var aboutRenter: String? = null,
         var place: String? = null,
-        var questionState: RentOutPost.QuestionState? = null,
+        var questionState: QuestionState? = null,
         var isWithPhoto: Boolean = false,
         var photoIds: MutableList<String?>? = mutableListOf(),
         var chatId: Long = 0L,
@@ -32,19 +32,18 @@ data class RentOutPost(
             apartment?.wantText?.toLowerCase() ?: ""
         }
 
-        val addressString = if (!place.isNullOrBlank()) " <b>$PLACE</b> $place" else ""
+        val addressString = if (!place.isNullOrBlank()) "<b>$PLACE</b> $place" else ""
         val phoneString = if (!phone.isNullOrBlank()) "<b>${RentOutTextConstants.PHONE}</b> $phone" else ""
 
-        return """${RentBotTextConstants.HASHTAG_RENT}
-            |${RentOutTextConstants.HASHTAG_RENT} $apartmentString $requiredDate
+        return """${RentOutTextConstants.HASHTAG_RENT}
+            |${RentOutTextConstants.RENT} $apartmentString ${requiredDate.toLowerCase()}
             |
             |<b>${RentOutTextConstants.PRICE}</b> $price
             |$addressString
             |
-            |<b>${RentOutTextConstants.ENTER_ABOUT_RENTER}</b> $aboutRenter
+            |<b>${RentOutTextConstants.ABOUT_RENTER}</b> $aboutRenter
             |
             |<b>${RentOutTextConstants.FACILITIES}</b> $facilities
-            |
             |
             |<b>${RentOutTextConstants.I_AM}</b> $name
             |<b>${RentOutTextConstants.TELEGRAM}</b> @$telegram
@@ -59,6 +58,7 @@ data class RentOutPost(
         ENTER_FLAT_ROOMS,
         ENTER_PRICE,
         ENTER_LOCATION,
+        ENTER_DATE,
         ENTER_FACILITIES,
         ENTER_ABOUT_RENTER,
         ENTER_PHONE,

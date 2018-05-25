@@ -4,7 +4,7 @@ import com.transcendensoft.model.rent.RentBotCommons.Companion.COMMAND_APARTMENT
 
 interface RentOutBotCommons {
     companion object {
-        const val TOKEN = "Token"
+        const val TOKEN = "TOKEN"
         const val BOT_NAME = "SnimuKvartirBot"
         const val USER_TELEGRAM_ID = 0
 
@@ -14,12 +14,11 @@ interface RentOutBotCommons {
         const val COMMAND_CANCEL = "cancel";
         const val COMMAND_SEND_MESSAGE = "sendmessage"
 
-        const val HELP_TEXT = """Бот канала <b>КвартирХаб</b> для тех, кто хочет разместить объявление о сдачи апартаментов
+        const val HELP_TEXT = """Бот канала <b>КвартирХаб</b> для тех, кто хочет разместить объявление об аренде апартаментов
             |
             |/$COMMAND_HELP: справка по командам бота;
             |/$COMMAND_CREATE_POST: создать новый пост о сдаче апартаментов;
             |/$COMMAND_CANCEL: отменить создание поста о сдаче;
-            |/$COMMAND_APARTMENT_STATE: указать сданы ли апартаменты или свободны;
             """
 
         //DB

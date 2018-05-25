@@ -56,6 +56,7 @@ import com.transcendensoft.util.logger
 import com.transcendensoft.util.withEmoji
 import org.mapdb.CC.LOG
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import org.telegram.abilitybots.api.bot.AbilityBot
 import org.telegram.abilitybots.api.objects.*
 import org.telegram.telegrambots.api.methods.AnswerCallbackQuery
@@ -78,9 +79,13 @@ import java.util.*
 import java.util.logging.Logger
 import kotlin.concurrent.schedule
 
-class RentBot : AbilityBot(TOKEN, BOT_NAME) {
+class RentBot() : AbilityBot(TOKEN, BOT_NAME) {
     companion object {
         val LOG by logger()
+    }
+
+    init {
+        System.setProperty("log.name", "RentBotLogs");
     }
 
     private val userMap = db.getMap<EndUser, MutableList<RentPost>>(USER_MAP)
@@ -117,7 +122,7 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
 
     fun sendMessageToUserAbility() = Ability.builder() // /sendmessage itcherry 'someMessage'
             .name(COMMAND_SEND_MESSAGE)
-            .locality(Locality.USER)
+            .locality(Locality.ALL)
             .privacy(Privacy.CREATOR)
             .action { ctx ->
                 val endUser = userMap.keys.first {
@@ -143,7 +148,7 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
             .action {
                 // Process database
                 val orderList = userMap[it.user()]
-                val currentUserOrder = orderList?.last()
+                val currentUserOrder = orderList?.lastOrNull()
 
                 if (currentUserOrder?.questionState !in setOf(RentPost.QuestionState.FINISHED, null) && currentUserOrder != null) {
                     orderList.remove(currentUserOrder)
@@ -165,7 +170,6 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
             .action {
                 val endUser = it.user()
 
-                db.clear()
                 var orderList = userMap[endUser]
                 if (orderList == null) {
                     orderList = mutableListOf()
@@ -275,6 +279,7 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
                                 val msg = SendMessage(KVARTIR_HUB_CHAT_ID, it.createPost().withEmoji())
                                 msg.enableHtml(true)
                                 it.sharedMessageId = sendMessage(msg)?.messageId
+                                sendPhotosAlbum(KVARTIR_HUB_CHAT_ID, it)
 
                                 LOG.info("Share post to KvartirHub $it")
                                 userMap[user] = orderList
@@ -354,7 +359,7 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
     private fun askAboutApartment(it: MessageContext, currentUserRentPost: RentPost?) {
         // Ask question about apartments
         val sendMessage = SendMessage(it.chatId(),
-                "${GOOD} ${currentUserRentPost?.name}!\n${ENTER_APARTMENT_TYPE}".withEmoji())
+                "$GOOD, ${currentUserRentPost?.name}!\n${ENTER_APARTMENT_TYPE}".withEmoji())
         val inlineKeyboardMarkup = getInlineKeyboard {
             val inlineKeyboardList = mutableListOf<InlineKeyboardButton>()
             Apartment.values().forEach {
@@ -759,11 +764,27 @@ class RentBot : AbilityBot(TOKEN, BOT_NAME) {
         }
     }
 
+    private fun sendPhotosAlbum(chatId: String, rentPost: RentPost?) {
+        rentPost?.isWithPhoto?.let {
+            if (it) {
+                rentPost.photoIds?.let {
+                    val inputMediaPhotos = it.map { fileId -> InputMediaPhoto(fileId, null) }
+                    val mediaGroup = SendMediaGroup(chatId, inputMediaPhotos)
+                    try {
+                        sendMediaGroup(mediaGroup)
+                    } catch (e: TelegramApiException) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
+    }
+
     private fun sendMessageToTelegram(sendMessage: SendMessage) {
         try {
             silent.execute(sendMessage)
         } catch (e: TelegramApiException) {
-            e.printStackTrace()
+            LOG.error(e.toString())
         }
     }
 
