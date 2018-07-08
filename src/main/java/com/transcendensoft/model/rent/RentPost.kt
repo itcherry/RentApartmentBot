@@ -14,6 +14,7 @@ import com.transcendensoft.model.rent.RentBotTextConstants.Companion.RENT
 import com.transcendensoft.model.rent.RentBotTextConstants.Companion.SQUARE
 import com.transcendensoft.model.rent.RentBotTextConstants.Companion.TELEGRAM
 import com.transcendensoft.model.rent.RentBotTextConstants.Companion.WHO_AM_I
+import com.transcendensoft.util.isNull
 import java.io.Serializable
 
 data class RentPost(
@@ -22,7 +23,7 @@ data class RentPost(
         var price: String = "",
         var square: Int = 0,
         var phone: String? = null,
-        var telegram: String = "",
+        var telegram: String? = "",
         var facilities: String = "",
         var flatRooms: FlatRooms? = null,
         var apartment: Apartment? = null,
@@ -45,7 +46,8 @@ data class RentPost(
 
         val addressString = if (!address.isNullOrBlank()) "по адресу: <b>${address}</b>" else ""
         val masterString = if (master != null) master!!.text.toLowerCase() else ""
-        val phoneString = if (!phone.isNullOrBlank()) "<b>$PHONE</b> $phone" else ""
+        val phoneString = if (!phone.isNullOrBlank()) "\n<b>$PHONE</b> $phone" else ""
+        val telegramString = if(!telegram.isNull()) "\n<b>$TELEGRAM</b> @$telegram" else ""
         val freeString = if (isFree) APARTMENTS_FREE else APARTMENTS_RENTED
         val photoString = if (isWithPhoto) PHOTO_OF_APARTMENTS else ""
 
@@ -60,9 +62,7 @@ data class RentPost(
             |$comment
             |
             |<b>$I_AM</b> $name
-            |<b>$WHO_AM_I</b> $masterString
-            |<b>$TELEGRAM</b> @$telegram
-            |$phoneString
+            |<b>$WHO_AM_I</b> $masterString$telegramString$phoneString
             |
             |$freeString
             |

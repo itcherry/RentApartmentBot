@@ -99,7 +99,7 @@ class RentBot() : AbilityBot(TOKEN, BOT_NAME) {
             .input(0)
             .action { ctx ->
                 silent.send(START.withEmoji(), ctx.chatId())
-                LOG.info("User ${ctx.user()?.username()} started bot.")
+                LOG.info("User ${ctx.user()?.username() ?: ctx.user()?.lastName() } started bot.")
                 //println(ResourceBundle.getBundle("i18n/strings", Locale.forLanguageTag("ua_UK")).getString("welcome"))
             }
             .build()
@@ -116,7 +116,7 @@ class RentBot() : AbilityBot(TOKEN, BOT_NAME) {
                 sendMessage.enableHtml(true)
                 sendMessageToTelegram(sendMessage)
 
-                LOG.info("User ${ctx.user()?.username()} ask help.")
+                LOG.info("User ${ctx.user()?.username() ?: ctx.user()?.lastName() } ask help.")
             }
             .build()
 
@@ -126,7 +126,11 @@ class RentBot() : AbilityBot(TOKEN, BOT_NAME) {
             .privacy(Privacy.CREATOR)
             .action { ctx ->
                 val endUser = userMap.keys.first {
-                    it.username() == ctx.firstArg()
+                    if(it.username() != null) {
+                        it.username() == ctx.firstArg()
+                    } else {
+                        false
+                    }
                 }
                 val userOrder = userMap[endUser]?.last()
                 if (userOrder != null) {
@@ -134,7 +138,7 @@ class RentBot() : AbilityBot(TOKEN, BOT_NAME) {
                     val text = textList.joinToString(separator = " ")
                     silent.send("Модератор: $text", userOrder.chatId)
 
-                    LOG.info("Creator send message to ${endUser?.username()}. Message: $text")
+                    LOG.info("Creator send message to ${endUser?.username() ?: ctx.user()?.lastName()}. Message: $text")
                 } else {
                     silent.send("Такого пользователя не существует в БД.", ctx.chatId())
                 }
@@ -153,10 +157,10 @@ class RentBot() : AbilityBot(TOKEN, BOT_NAME) {
                 if (currentUserOrder?.questionState !in setOf(RentPost.QuestionState.FINISHED, null) && currentUserOrder != null) {
                     orderList.remove(currentUserOrder)
                     silent.send(CANCELLED, it.chatId())
-                    LOG.info("User ${it.user()?.username()} cancelled order $currentUserOrder")
+                    LOG.info("User ${it.user()?.username() ?: it.user()?.lastName()} cancelled order $currentUserOrder")
                 } else {
                     silent.send(ERROR_CANCEL.withEmoji(), it.chatId())
-                    LOG.info("User ${it.user()?.username()} invokes error of cancel order $currentUserOrder")
+                    LOG.info("User ${it.user()?.username() ?: it.user()?.lastName()} invokes error of cancel order $currentUserOrder")
                 }
 
                 userMap[it.user()] = orderList
@@ -187,7 +191,7 @@ class RentBot() : AbilityBot(TOKEN, BOT_NAME) {
 
                 silent.send(CREATE_POST_TEXT.withEmoji(), it.chatId())
                 silent.send(ENTER_NAME, it.chatId())
-                LOG.info("User ${it.user()?.username()} starts creating post")
+                LOG.info("User ${it.user()?.username() ?: it.user()?.lastName()} starts creating post")
             }.build()
 
     fun setApartmentsStateAbility() = Ability.builder()
@@ -212,11 +216,11 @@ class RentBot() : AbilityBot(TOKEN, BOT_NAME) {
 
                 sendPhotosAlbum(msgContext.chatId(), order)
 
-                LOG.info("User ${msgContext.user()?.username()} requests all orders to change isFree")
+                LOG.info("User ${msgContext.user()?.username() ?: msgContext.user()?.lastName()} requests all orders to change isFree")
             }
         } else {
             silent.send(ERROR_RENTED_COMMAND, msgContext.chatId())
-            LOG.info("User ${msgContext.user()?.username()} user requests all orders ERROR.")
+            LOG.info("User ${msgContext.user()?.username() ?: msgContext.user()?.lastName()} user requests all orders ERROR.")
         }
     }
 
@@ -336,7 +340,7 @@ class RentBot() : AbilityBot(TOKEN, BOT_NAME) {
 
             silent.send(APARTMENT_STATE_CHANGED.withEmoji(), msgContext.chatId())
 
-            LOG.info("User ${msgContext.user()?.username()} changed order : $order")
+            LOG.info("User ${msgContext.user()?.username() ?: msgContext.user()?.lastName()} changed order : $order")
 
             return true
         }
@@ -634,11 +638,11 @@ class RentBot() : AbilityBot(TOKEN, BOT_NAME) {
                     // Update in db
                     userMap[it.user()] = innerOrderList
                 }
-                LOG.info("User ${it.user().username()} loaded photos. Order: $innerCurrentUserOrder")
+                LOG.info("User ${it.user().username() ?: it.user()?.lastName()} loaded photos. Order: $innerCurrentUserOrder")
             }
         } else {
             silent.send(ERROR_SEND_PHOTO, it.chatId())
-            LOG.warn("User ${it.user().username()} didn't load the photo. But entered another shit.")
+            LOG.warn("User ${it.user().username() ?: it.user()?.lastName()} didn't load the photo. But entered another shit.")
         }
 
         // Update in db
@@ -715,14 +719,16 @@ class RentBot() : AbilityBot(TOKEN, BOT_NAME) {
                     sendMessagePublished.enableHtml(true)
                     sendMessageToTelegram(sendMessagePublished)
 
-                    LOG.info("User ${msgContext.user().username()} published post. $currentUserOrder")
+                    LOG.info("User ${msgContext.user().username() ?: msgContext.user()?.lastName()}" +
+                            " published post. $currentUserOrder")
                 }
                 PublishState.CANCEL -> {
                     silent.send(PUBLISH_CANCELLED, msgContext.chatId())
                     helpAbility().action().accept(msgContext)
                     orderList?.remove(currentUserOrder)
 
-                    LOG.info("User ${msgContext.user().username()} cancelled post. $currentUserOrder")
+                    LOG.info("User ${msgContext.user().username() ?: msgContext.user()?.lastName()}" +
+                            " cancelled post. $currentUserOrder")
                 }
                 null -> {
                     val sendMessagePreview = SendMessage(msgContext.chatId(), POST_PREVIEW.withEmoji())
@@ -733,7 +739,8 @@ class RentBot() : AbilityBot(TOKEN, BOT_NAME) {
 
                     askAboutCorrectnessOfPost(msgContext.chatId())
 
-                    LOG.info("User ${msgContext.user().username()} entered shit when asking publish or cancel. $currentUserOrder")
+                    LOG.info("User ${msgContext.user().username() ?: msgContext.user()?.lastName()}" +
+                            " entered shit when asking publish or cancel. $currentUserOrder")
                 }
             }
         }

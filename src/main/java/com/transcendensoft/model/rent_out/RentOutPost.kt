@@ -5,6 +5,7 @@ import com.transcendensoft.model.FlatRooms
 import com.transcendensoft.model.rent.RentBotTextConstants
 import com.transcendensoft.model.rent.RentPost
 import com.transcendensoft.model.rent_out.RentOutTextConstants.Companion.PLACE
+import com.transcendensoft.util.isNull
 import java.io.Serializable
 
 data class RentOutPost(
@@ -12,7 +13,7 @@ data class RentOutPost(
         var name: String = "",
         var price: String = "",
         var phone: String? = null,
-        var telegram: String = "",
+        var telegram: String? = "",
         var facilities: String = "",
         var flatRooms: FlatRooms? = null,
         var requiredDate: String = "",
@@ -33,8 +34,8 @@ data class RentOutPost(
         }
 
         val addressString = if (!place.isNullOrBlank()) "<b>$PLACE</b> $place" else ""
-        val phoneString = if (!phone.isNullOrBlank()) "<b>${RentOutTextConstants.PHONE}</b> $phone" else ""
-
+        val phoneString = if (!phone.isNullOrBlank()) "\n<b>${RentOutTextConstants.PHONE}</b> $phone" else ""
+        val telegramString = if(!telegram.isNull()) "\n<b>${RentOutTextConstants.TELEGRAM}</b> @$telegram" else ""
         return """${RentOutTextConstants.HASHTAG_RENT}
             |${RentOutTextConstants.RENT} $apartmentString ${requiredDate.toLowerCase()}
             |
@@ -45,9 +46,7 @@ data class RentOutPost(
             |
             |<b>${RentOutTextConstants.FACILITIES}</b> $facilities
             |
-            |<b>${RentOutTextConstants.I_AM}</b> $name
-            |<b>${RentOutTextConstants.TELEGRAM}</b> @$telegram
-            |$phoneString
+            |<b>${RentOutTextConstants.I_AM}</b> $name$telegramString$phoneString
         """.trimMargin()
     }
 

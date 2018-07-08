@@ -1,0 +1,27 @@
+Manifest-Version: 1.0
+Class-Path: grizzly-framework-2.3.28.jar javax.inject-1.jar jackson-ja
+ xrs-base-2.8.7.jar activation-1.1.jar guava-19.0.jar commons-codec-1.
+ 9.jar kotlin-stdlib-jdk8-1.2.41.jar eclipse-collections-7.1.2.jar jer
+ sey-media-jaxb-2.25.1.jar kotlin-logging-1.5.4.jar mapdb-3.0.4.jar je
+ rsey-server-2.25.1.jar httpcore-4.4.6.jar commons-logging-1.2.jar hk2
+ -api-2.5.0-b32.jar eclipse-collections-forkjoin-7.1.2.jar jackson-jax
+ rs-json-provider-2.8.7.jar javax.mail-1.6.0.jar logback-classic-1.3.0
+ -alpha4.jar elsa-3.0.0-M5.jar javax.inject-2.5.0-b32.jar commons-lang
+ 3-3.5.jar javax.annotation-api-1.2.jar slf4j-api-1.8.0-beta1.jar jack
+ son-annotations-2.8.0.jar aopalliance-1.0.jar emoji-java-4.0.0.jar hk
+ 2-utils-2.5.0-b32.jar guice-4.1.0.jar httpmime-4.5.3.jar jackson-core
+ -2.8.7.jar httpclient-4.5.3.jar jackson-module-jaxb-annotations-2.8.7
+ .jar eclipse-collections-api-7.1.2.jar jersey-common-2.25.1.jar jerse
+ y-client-2.25.1.jar jersey-media-json-jackson-2.25.1.jar logback-core
+ -1.3.0-alpha4.jar json-20170516.jar telegrambots-3.6.jar javax.ws.rs-
+ api-2.0.1.jar jcip-annotations-1.0.jar jersey-container-grizzly2-http
+ -2.25.1.jar jersey-entity-filtering-2.25.1.jar telegrambots-abilities
+ -3.6.jar kotlin-stdlib-jdk7-1.2.41.jar telegrambots-meta-3.6.jar griz
+ zly-http-server-2.3.28.jar commons-io-2.5.jar kotlin-stdlib-1.2.41.ja
+ r lz4-1.3.0.jar jackson-databind-2.8.7.jar grizzly-http-2.3.28.jar os
+ gi-resource-locator-1.0.1.jar jersey-guava-2.25.1.jar hk2-locator-2.5
+ .0-b32.jar annotations-13.0.jar aopalliance-repackaged-2.5.0-b32.jar 
+ kotlin-reflect-1.2.41.jar javassist-3.20.0-GA.jar validation-api-1.1.
+ 0.Final.jar
+Main-Class: com.transcendensoft.MainKt
+
